@@ -1,42 +1,71 @@
-# Multilingual AI Voice Assistant Bot
 
-An AI-powered voice assistant that can understand and respond in multiple languages while maintaining a consistent character personality.
+# 🎤 Multilingual ASR with Sentiment Analysis 💬
 
-## Features
-- Speech-to-text recognition
-- Text-to-speech output
-- Multilingual support
-- Character-based responses
-- Web interface for interaction
+This Streamlit app allows you to:
+- Record audio directly from your browser 🎙️
+- Transcribe the audio using OpenAI's Whisper model 📝
+- Perform sentiment analysis using the `go_emotions` model by Hugging Face 🤖
+- Display emotions with intuitive emojis 😄😢😠
 
-## Setup
+## 🚀 Features
+✅ **Audio Recording:** Record audio within the app using `streamlit-mic-recorder`  
+✅ **Multilingual ASR:** Uses Whisper's `base` model for speech-to-text in multiple languages  
+✅ **Sentiment Analysis:** Leverages `SamLowe/roberta-base-go_emotions` for extracting emotions from transcriptions  
+✅ **Emoji Display:** Maps each emotion to its relevant emoji for easy visualization  
+✅ **Save Recordings:** Audio is saved locally in the `recordings` directory  
 
-1. Install the required dependencies:
-```bash
-pip install -r requirements.txt
+## 🛠 Tech Stack
+- [Streamlit](https://streamlit.io/)
+- [OpenAI Whisper](https://github.com/openai/whisper)
+- [Hugging Face Transformers](https://huggingface.co/docs/transformers)
+- [streamlit-mic-recorder](https://github.com/stefanrmmr/streamlit-mic-recorder)
+
+## 📂 Project Structure
+```
+📁 recordings/        # Stores all recorded audio files
+📄 app.py             # Main Streamlit application
+📄 README.md          # Project Documentation
 ```
 
-2. Run the application:
-```bash
-python app.py
+## 💻 How to Run Locally
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/gnanendranaidun/Sentiment-analysis---AI-Verse.git
+   cd Sentiment-analysis---AI-Verse
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the Streamlit App:**
+   ```bash
+   streamlit run app.py
+   ```
+
+## 📜 Example Usage
+1. Click **Start Recording** to record your voice.
+2. **Stop Recording** when done.
+3. Click **Get Sentiments** to:
+   - Transcribe your speech
+   - Analyze emotions
+   - Display sentiments with emojis
+
+## 🎯 Example Sentiment Output:
+```
+joy 😄: 0.85
+gratitude 🙏: 0.65
+admiration 😌: 0.60
 ```
 
-3. Open your browser and navigate to `http://localhost:5000`
+## ✅ To-Do / Improvements
+- Add language selection for Whisper model
+- Enable sentiment trend visualization (charts/graphs)
+- Deploy to Streamlit Cloud or Hugging Face Spaces
 
-## Character Background
-The bot is designed as a grumpy but knowledgeable librarian who reluctantly helps users find information. The character maintains a consistent personality while providing accurate responses in the user's preferred language.
+## 🤖 Model References
+- **Whisper:** [OpenAI Whisper](https://github.com/openai/whisper)
+- **Sentiment Model:** [SamLowe/roberta-base-go_emotions](https://huggingface.co/SamLowe/roberta-base-go_emotions)
 
-## Technologies Used
-- Python
-- Flask
-- SpeechRecognition
-- pyttsx3
-- Hugging Face Transformers (TinyLlama)
-- Google Translate API
 
-## System Requirements
-- Python 3.8 or higher
-- CUDA-capable GPU (recommended for better performance)
-- At least 8GB RAM
-- Microphone for voice input
-- Speakers for voice output 
