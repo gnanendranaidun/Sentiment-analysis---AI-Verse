@@ -6,6 +6,7 @@ import wave
 import numpy as np
 import os
 import uuid
+st.set_option('server.fileWatcherType', 'none')
 
 file_path = None
 
