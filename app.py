@@ -7,7 +7,7 @@ import numpy as np
 import os
 import uuid
 
-temp_audio_file_path = "recordings/recording_9cd20e8acce446c59bd6e38150fbe000.mp3"
+file_path = None
 
 # Streamlit app structure
 st.title("🎤 Multilingual ASR 💬")
@@ -116,7 +116,7 @@ sentiment_option = st.radio("Select an option", ["Sentiment Only", "Sentiment + 
 # Button to trigger the processing
 if st.button("Get sentiments"):
     st.write("Transcribing Audio...")
-    result = model.transcribe(temp_audio_file_path)
+    result = model.transcribe(file_path)
     print(f"results are:\n {result}")
     ans = result["text"]
     st.write(ans)
