@@ -147,39 +147,29 @@ if 'camera_thread' not in st.session_state:
 
 # Emotion labels
 emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
-
-# Function to annotate emotions on the frame
-def annotate_emotions(frame):
-    # Convert the frame to grayscale for face detection
-    gray = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2GRAY)
+def annotate_emotions(file_path):
     
-    # Detect faces
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    
-    # Create a copy of the frame for drawing
+    # Load the image using OpenCV
+    frame = cv2.imread(file_path)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     annotated_frame = frame.copy()
-    
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30),flags=cv2.CASCADE_SCALE_IMAGE)
+
     for (x, y, w, h) in faces:
-        # Draw rectangle around face
-        cv2.rectangle(annotated_frame, (x, y), (x+w, y+h), (255, 107, 107), 2)
-        
-        # Extract the face region
+        cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         face = gray[y:y + h, x:x + w]
+        face = cv2.cvtColor(face, cv2.COLOR_GRAY2RGB)  # Convert grayscale to RGB
         face = cv2.resize(face, (224, 224))
         face = face.astype("float") / 255.0
         face = img_to_array(face)
         face = np.expand_dims(face, axis=0)
-        
-        # Predict emotion
+
         prediction = classifier.predict(face)[0]
         emotion = emotion_labels[np.argmax(prediction)]
-        
-        # Add emotion text
-        cv2.putText(annotated_frame, emotion, (x, y-10), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 107, 107), 2)
-    
-    return annotated_frame
 
+        cv2.putText(annotated_frame, emotion, (x, y-30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (225, 0, 200), 2)
+        return annotated_frame
 # Camera loop function
 def camera_loop():
     try:
@@ -464,7 +454,12 @@ with tab2:
             
             if camera_frame is not None:
                 frame = Image.open(camera_frame)
-                annotated_frame = annotate_emotions(frame)
+                unique_filename = f"images/{uuid.uuid4()}.jpg"
+                if not os.path.exists("images"):
+                    os.mkdir("images")
+                with open(unique_filename, "wb") as f:
+                    frame.save(unique_filename)
+                annotated_frame = annotate_emotions(unique_filename)
                 st.session_state.frame_placeholder.image(annotated_frame, use_container_width=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
