@@ -16,7 +16,14 @@ import tempfile
 import time
 import threading
 import moviepy
-
+import whisper
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import img_to_array
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+import threading
+import time
+from tensorflow.keras.models import load_model
 # Set page config
 st.set_page_config(
     page_title="Mindful AI - Emotion Analyzer",
@@ -130,14 +137,70 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-# Initialize session state for camera
+# Initialize session state variables
 if 'camera_running' not in st.session_state:
     st.session_state.camera_running = False
-if 'camera_thread' not in st.session_state:
-    st.session_state.camera_thread = None
 if 'frame_placeholder' not in st.session_state:
     st.session_state.frame_placeholder = None
+if 'camera_thread' not in st.session_state:
+    st.session_state.camera_thread = None
+
+# Emotion labels
+emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+
+# Function to annotate emotions on the frame
+def annotate_emotions(frame):
+    # Convert the frame to grayscale for face detection
+    gray = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2GRAY)
+    
+    # Detect faces
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    
+    # Create a Pillow image for drawing annotations
+    annotated_image = frame.copy()
+    draw = ImageDraw.Draw(annotated_image)
+    
+    for (x, y, w, h) in faces:
+        # Draw rectangle around the face
+        draw.rectangle([x, y, x + w, y + h], outline="green", width=2)
+        
+        # Extract the face region
+        face = gray[y:y + h, x:x + w]
+        face = cv2.resize(face, (224, 224))
+        face = face.astype("float") / 255.0
+        face = img_to_array(face)
+        face = np.expand_dims(face, axis=0)
+        
+        # Predict emotion
+        prediction = model.predict(face)[0]
+        emotion = emotion_labels[np.argmax(prediction)]
+        
+        # Annotate the emotion label
+        draw.text((x, y - 15), emotion, fill="red")
+    
+    return annotated_image
+
+# Camera loop function
+def camera_loop():
+    try:
+        while st.session_state.camera_running:
+            # Capture frame from webcam
+            frame = st.camera_input("Camera Feed", key="live_camera")
+            
+            if frame is not None:
+                # Convert the frame to a PIL image
+                frame = Image.open(frame)
+                
+                # Annotate emotions on the frame
+                annotated_frame = annotate_emotions(frame)
+                
+                # Display the annotated frame in the placeholder
+                if st.session_state.frame_placeholder is not None:
+                    st.session_state.frame_placeholder.image(annotated_frame, caption="Live Feed with Emotion Detection", use_container_width=True)
+            
+            time.sleep(0.1)
+    finally:
+        pass
 
 # Initialize models
 @st.cache_resource(show_spinner=False)
@@ -145,35 +208,47 @@ def load_models():
     try:
         # Load face cascade first as it's essential
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        classifier = tf.keras.models.load_model('models/ResNet50_Transfer_Learning.keras')
+
         if face_cascade.empty():
             st.error("Error loading face detection model")
             return None, None
 
         # Load sentiment analysis model
         try:
+            model = whisper.load_model("base")
             sentiment_analysis = pipeline("sentiment-analysis", framework="pt", model="SamLowe/roberta-base-go_emotions")
         except Exception as e:
             st.error(f"Error loading sentiment analysis model: {str(e)}")
-            return None, None
+            return (None, None), (None, None)
 
-        return sentiment_analysis, face_cascade
+        return (sentiment_analysis, model), (face_cascade, classifier)
     except Exception as e:
         st.error(f"Error loading models: {str(e)}")
-        return None, None
+        return (None, None), (None, None)
 
 # Create models directory if it doesn't exist
 os.makedirs("models", exist_ok=True)
 
 # Load models at startup
 with st.spinner("Loading models..."):
-    sentiment_analysis, face_cascade = load_models()
+    a,b = load_models()
+
+    (sentiment_analysis,model) = a
+    (face_cascade,classifier) = b
 
 if not face_cascade:
     st.error("Failed to load face detection model. Please check your OpenCV installation.")
     st.stop()
+if not classifier:
+    st.error("Failed to load classifier. Please check your OpenCV installation.")
+    st.stop()
 
 if not sentiment_analysis:
     st.error("Failed to load sentiment analysis model. Please check your internet connection and try again.")
+    st.stop()
+if not model:
+    st.error("Failed to load whisper model. Please check your internet connection and try again.")
     st.stop()
 
 # Header with gradient background
@@ -224,7 +299,59 @@ with tab1:
             <p>Speak naturally and let AI analyze your emotions</p>
         </div>
     """, unsafe_allow_html=True)
-    
+    def analyze_sentiment(text):
+        results = sentiment_analysis(text)
+        sentiment_results = {result['label']: result['score'] for result in results}
+        return sentiment_results
+
+    def get_sentiment_emoji(sentiment):
+        # Define the emojis corresponding to each sentiment
+        emoji_mapping = {
+            "disappointment": "😞",
+            "sadness": "😢",
+            "annoyance": "😠",
+            "neutral": "😐",
+            "disapproval": "👎",
+            "realization": "😮",
+            "nervousness": "😬",
+            "approval": "👍",
+            "joy": "😄",
+            "anger": "😡",
+            "embarrassment": "😳",
+            "caring": "🤗",
+            "remorse": "😔",
+            "disgust": "🤢",
+            "grief": "😥",
+            "confusion": "😕",
+            "relief": "😌",
+            "desire": "😍",
+            "admiration": "😌",
+            "optimism": "😊",
+            "fear": "😨",
+            "love": "❤️",
+            "excitement": "🎉",
+            "curiosity": "🤔",
+            "amusement": "😄",
+            "surprise": "😲",
+            "gratitude": "🙏",
+            "pride": "🦁"
+        }
+        return emoji_mapping.get(sentiment, "")
+
+    def display_sentiment_results(sentiment_results, option):
+        sentiment_text = ""
+        for sentiment, score in sentiment_results.items():
+            emoji = get_sentiment_emoji(sentiment)
+            if option == "Sentiment Only":
+                sentiment_text += f"{sentiment} {emoji}\n"
+            elif option == "Sentiment + Score":
+                sentiment_text += f"{sentiment} {emoji}: {score}\n"
+        return sentiment_text
+
+    def inference(ans, sentiment_option):
+        sentiment_results = analyze_sentiment(ans)
+        sentiment_output = display_sentiment_results(sentiment_results, sentiment_option)
+        return sentiment_output
     # Live recording
     try:
         audio = mic_recorder(
@@ -253,28 +380,24 @@ with tab1:
                 
                 with open(file_path, "wb") as f:
                     f.write(audio_bytes)
-                
+        
                 # Analyze emotion directly from audio features
                 if st.button("🔍 Analyze Voice Emotion"):
                     with st.spinner("Analyzing your voice..."):
                         try:
                             # For now, we'll use a simulated emotion detection
                             # In a real implementation, you would use a voice emotion detection model
-                            emotions = ["Happy", "Sad", "Neutral", "Excited", "Calm"]
-                            confidences = np.random.dirichlet(np.ones(len(emotions)))
                             
                             st.markdown("### 📊 Analysis Results")
+                            st.markdown("#### Transcribing Audio...")
+                            results = model.transcribe(file_path)
+                            st.markdown(f"## {results["text"]}")
+                            print(results)
+                            sentiment_output_value = inference(results["text"], "Sentiment + Score")
+                            st.markdown("#### "+ sentiment_output_value)
                             
-                            # Sort emotions by confidence
-                            emotion_results = sorted(zip(emotions, confidences), key=lambda x: x[1], reverse=True)
                             
-                            for emotion, confidence in emotion_results:
-                                st.markdown(f"""
-                                    <div class="result-box">
-                                        <h4>Emotion: {emotion}</h4>
-                                        <p>Confidence: {confidence:.2%}</p>
-                                    </div>
-                                """, unsafe_allow_html=True)
+                            # Sort emotions by confidenc
                             
                             # Add a note about the analysis
                             st.info("""
@@ -301,7 +424,6 @@ with tab2:
         ["📹 Live Camera", "📸 Upload Image", "🎥 Upload Video"],
         horizontal=True
     )
-    
     if input_type == "📹 Live Camera":
         st.markdown("""
             <div class="feature-card">
@@ -321,61 +443,22 @@ with tab2:
         if st.session_state.frame_placeholder is None:
             st.session_state.frame_placeholder = st.empty()
 
+        # Start camera feed
         if start_camera:
             st.session_state.camera_running = True
-            # Start camera in a separate thread
-            def camera_loop():
-                camera = cv2.VideoCapture(0)
-                if not camera.isOpened():
-                    st.error("Could not access the camera!")
-                    st.session_state.camera_running = False
-                    return
-
-                try:
-                    while st.session_state.camera_running:
-                        ret, frame = camera.read()
-                        if not ret:
-                            break
-
-                        # Convert BGR to RGB
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        
-                        # Convert to grayscale for face detection
-                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                        
-                        # Detect faces
-                        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-                        
-                        for (x, y, w, h) in faces:
-                            # Draw rectangle around face
-                            cv2.rectangle(frame_rgb, (x, y), (x+w, y+h), (255, 107, 107), 2)
-                            
-                            # Simulate emotion detection
-                            emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprise", "Fear"]
-                            emotion = np.random.choice(emotions)
-                            
-                            # Add emotion text
-                            cv2.putText(frame_rgb, emotion, (x, y-10), 
-                                      cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 107, 107), 2)
-                        
-                        # Update the frame in the main thread
-                        if st.session_state.frame_placeholder is not None:
-                            st.session_state.frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
-                        
-                        time.sleep(0.1)
-                finally:
-                    camera.release()
-
-            # Replace the placeholder with the corrected code
-            st.session_state.camera_thread = threading.Thread(target=camera_loop)
-            st.session_state.camera_thread.start()
             
+            # Start camera in a separate thread
+            if st.session_state.camera_thread is None:
+                st.session_state.camera_thread = threading.Thread(target=camera_loop)
+                st.session_state.camera_thread.start()
+
+        # Stop camera feed
         if stop_camera:
             st.session_state.camera_running = False
             if st.session_state.camera_thread is not None:
                 st.session_state.camera_thread.join()
                 st.session_state.camera_thread = None
-                st.session_state.frame_placeholder.empty()
+            st.session_state.frame_placeholder.empty()
 
     elif input_type == "📸 Upload Image":
         st.markdown("""
@@ -582,44 +665,3 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-def camera_loop():
-    camera = cv2.VideoCapture(0)
-    if not camera.isOpened():
-        st.error("Could not access the camera!")
-        st.session_state.camera_running = False
-        return
-
-    try:
-        while st.session_state.camera_running:
-            ret, frame = camera.read()
-            if not ret:
-                break
-
-            # Convert BGR to RGB
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            
-            # Convert to grayscale for face detection
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            
-            # Detect faces
-            faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-            
-            for (x, y, w, h) in faces:
-                # Draw rectangle around face
-                cv2.rectangle(frame_rgb, (x, y), (x+w, y+h), (255, 107, 107), 2)
-                
-                # Simulate emotion detection
-                emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprise", "Fear"]
-                emotion = np.random.choice(emotions)
-                
-                # Add emotion text
-                cv2.putText(frame_rgb, emotion, (x, y-10), 
-                          cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 107, 107), 2)
-            
-            # Update the frame in the main thread
-            if st.session_state.frame_placeholder is not None:
-                st.session_state.frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
-            
-            time.sleep(0.1)
-    finally:
-        camera.release()
