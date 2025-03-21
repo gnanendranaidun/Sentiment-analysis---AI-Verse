@@ -160,13 +160,12 @@ def annotate_emotions(frame):
     # Detect faces
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     
-    # Create a Pillow image for drawing annotations
-    annotated_image = frame.copy()
-    draw = ImageDraw.Draw(annotated_image)
+    # Create a copy of the frame for drawing
+    annotated_frame = frame.copy()
     
     for (x, y, w, h) in faces:
-        # Draw rectangle around the face
-        draw.rectangle([x, y, x + w, y + h], outline="green", width=2)
+        # Draw rectangle around face
+        cv2.rectangle(annotated_frame, (x, y), (x+w, y+h), (255, 107, 107), 2)
         
         # Extract the face region
         face = gray[y:y + h, x:x + w]
@@ -176,13 +175,14 @@ def annotate_emotions(frame):
         face = np.expand_dims(face, axis=0)
         
         # Predict emotion
-        prediction = model.predict(face)[0]
+        prediction = classifier.predict(face)[0]
         emotion = emotion_labels[np.argmax(prediction)]
         
-        # Annotate the emotion label
-        draw.text((x, y - 15), emotion, fill="red")
+        # Add emotion text
+        cv2.putText(annotated_frame, emotion, (x, y-10), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 107, 107), 2)
     
-    return annotated_image
+    return annotated_frame
 
 # Camera loop function
 def camera_loop():
@@ -433,6 +433,7 @@ with tab2:
         ["📹 Live Camera", "📸 Upload Image", "🎥 Upload Video"],
         horizontal=True
     )
+    
     if input_type == "📹 Live Camera":
         st.markdown("""
             <div class="feature-card">
@@ -441,6 +442,10 @@ with tab2:
             </div>
         """, unsafe_allow_html=True)
         
+        # Create a placeholder for the camera feed
+        if st.session_state.frame_placeholder is None:
+            st.session_state.frame_placeholder = st.empty()
+        
         # Camera control buttons
         col1, col2 = st.columns(2)
         with col1:
@@ -448,26 +453,29 @@ with tab2:
         with col2:
             stop_camera = st.button("⏹️ Stop Camera")
 
-        # Create a placeholder for the camera feed
-        if st.session_state.frame_placeholder is None:
-            st.session_state.frame_placeholder = st.empty()
-
         # Start camera feed
         if start_camera:
             st.session_state.camera_running = True
             
-            # Start camera in a separate thread
-            if st.session_state.camera_thread is None:
-                st.session_state.camera_thread = threading.Thread(target=camera_loop)
-                st.session_state.camera_thread.start()
-
         # Stop camera feed
         if stop_camera:
             st.session_state.camera_running = False
-            if st.session_state.camera_thread is not None:
-                st.session_state.camera_thread.join()
-                st.session_state.camera_thread = None
             st.session_state.frame_placeholder.empty()
+        
+        # Camera feed display
+        if st.session_state.camera_running:
+            # Use Streamlit's built-in camera input
+            camera_frame = st.camera_input("Camera Feed")
+            
+            if camera_frame is not None:
+                # Convert the camera frame to PIL Image
+                frame = Image.open(camera_frame)
+                
+                # Annotate emotions on the frame
+                annotated_frame = annotate_emotions(frame)
+                
+                # Display the annotated frame
+                st.session_state.frame_placeholder.image(annotated_frame, caption="Live Feed with Emotion Detection", use_container_width=True)
 
     elif input_type == "📸 Upload Image":
         st.markdown("""
