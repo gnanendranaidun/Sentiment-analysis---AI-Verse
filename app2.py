@@ -398,7 +398,7 @@ with tab1:
                             st.markdown("### 📊 Analysis Results")
                             st.markdown("#### Transcribing Audio...")
                             results = Sarvam_STT.detect_and_translate(file_path)
-                            st.markdown(f"### {results["transcript"]}")
+                            st.markdown(f"### {results['transcript']}")
                             text = results["transcript"]
                             if not results["language_code"] == "en":
                                 text = Google_Translate.detect_and_translate(text)
