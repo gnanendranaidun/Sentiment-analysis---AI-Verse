@@ -8,22 +8,13 @@ import plotly.graph_objects as go
 from PIL import Image
 import os
 import uuid
-import wave
-import scipy.io.wavfile as wavfile
-from datetime import datetime
-import base64
 import tempfile
-import time
-import threading
-import moviepy
 import whisper
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import img_to_array
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import numpy as np
-import threading
 import time
-from tensorflow.keras.models import load_model
 import Sarvam_STT
 import Google_Translate
 
@@ -154,6 +145,7 @@ def annotate_emotions(file_path):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     annotated_frame = frame.copy()
+    annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30),flags=cv2.CASCADE_SCALE_IMAGE)
 
     for (x, y, w, h) in faces:
@@ -209,6 +201,7 @@ def load_models():
         try:
             model = whisper.load_model("base")
             sentiment_analysis = pipeline("sentiment-analysis", framework="pt", model="SamLowe/roberta-base-go_emotions")
+            # sentiment_analysis = pipeline("sentiment-analysis", model="cardiffnlp/twitter-xlm-roberta-base-sentiment")  shitttt
 
             return (sentiment_analysis, model), (face_cascade, classifier)
         except Exception as e:
@@ -285,7 +278,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Create tabs
-tab1, tab2, tab3 = st.tabs(["🎤 Voice Analysis", "👤 Facial Detection", "❤️ Heart Rate Monitor"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎤 Voice Analysis", "👤 Facial Detection", "❤️ Heart Rate Monitor","💬 AI Chat"])
 
 # Voice Analysis Tab
 with tab1:
@@ -471,39 +464,26 @@ with tab2:
                 <p>Analyze emotions from a static image</p>
             </div>
         """, unsafe_allow_html=True)
+        if st.session_state.frame_placeholder is None:
+            st.session_state.frame_placeholder = st.empty()
         
         uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
         if uploaded_file is not None:
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Image", use_container_width=True)
-            
-            if st.button("🔍 Analyze Image"):
-                # Convert PIL image to OpenCV format
-                frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                
-                # Detect faces
-                faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-                
-                if len(faces) > 0:
-                    st.success(f"Found {len(faces)} face(s)!")
-                    
-                    for (x, y, w, h) in faces:
-                        # Draw rectangle around face with gradient color
-                        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 107, 107), 2)
-                        
-                        # Simulate emotion detection (replace with actual emotion detection model)
-                        emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprise", "Fear"]
-                        emotion = np.random.choice(emotions)
-                        
-                        # Add emotion text
-                        cv2.putText(frame, emotion, (x, y-10), 
-                                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 107, 107), 2)
-                    
+            frame = Image.open(uploaded_file)
+            # st.image(frame, caption="Uploaded Image", use_container_width=True)
+            st.session_state.frame_placeholder.image(frame, use_container_width=True)
+            unique_filename = f"images/{uuid.uuid4()}.jpg"
+            if not os.path.exists("images"):
+                os.mkdir("images")
+            with open(unique_filename, "wb") as f:
+                frame.save(unique_filename)
+            annotated_frame = annotate_emotions(unique_filename)
                     # Display the processed image
-                    st.image(frame, channels="BGR", caption="Processed Image with Emotion Detection", use_container_width=True)
-                else:
-                    st.warning("No faces detected in the image!")
+            annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
+            st.session_state.frame_placeholder.image(annotated_frame, use_container_width=True)
+            # st.image(annotated_frame, channels="BGR", caption="Processed Image with Emotion Detection", use_container_width=True)
+        else:
+            st.warning("No faces detected in the image!")
     
     else:  # Video upload
         st.markdown("""
@@ -519,6 +499,8 @@ with tab2:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
                 tmp_file.write(uploaded_video.getvalue())
                 video_path = tmp_file.name
+            if st.session_state.frame_placeholder is None:
+                st.session_state.frame_placeholder = st.empty()
             
             # Display video
             st.video(uploaded_video)
@@ -531,27 +513,27 @@ with tab2:
                         ret, frame = cap.read()
                         if not ret:
                             break
-                        
-                        # Convert to grayscale for face detection
                         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                        
-                        # Detect faces
-                        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-                        
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        annotated_frame = frame.copy()
+                        annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
+                        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30),flags=cv2.CASCADE_SCALE_IMAGE)
+
                         for (x, y, w, h) in faces:
-                            # Draw rectangle around face
-                            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 107, 107), 2)
-                            
-                            # Simulate emotion detection
-                            emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprise", "Fear"]
-                            emotion = np.random.choice(emotions)
-                            
-                            # Add emotion text
-                            cv2.putText(frame, emotion, (x, y-10), 
-                                       cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 107, 107), 2)
+                            cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                            face = gray[y:y + h, x:x + w]
+                            face = cv2.cvtColor(face, cv2.COLOR_GRAY2RGB)  # Convert grayscale to RGB
+                            face = cv2.resize(face, (224, 224))
+                            face = face.astype("float") / 255.0
+                            face = img_to_array(face)
+                            face = np.expand_dims(face, axis=0)
+
+                            prediction = classifier.predict(face)[0]
+                            emotion = emotion_labels[np.argmax(prediction)]
+
+                            cv2.putText(annotated_frame, emotion, (x, y-30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (225, 0, 200), 2)
                         
-                        # Display processed frame
-                        st.image(frame, channels="BGR", caption="Processed Video Frame", use_container_width=True)
+                        st.image(annotated_frame, channels="BGR", caption="Processed Video Frame", use_container_width=True)
                     
                     cap.release()
 
@@ -659,6 +641,49 @@ with tab3:
                 st.warning("⚠️ Heart rate is above normal range")
             else:
                 st.success("✅ Heart rate is within normal range")
+
+# AI Chat Tab
+with tab4:
+    st.header("AI Chat")
+    
+    # Initialize chat history in session state if not exists
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    
+    st.markdown("""
+        <div class="feature-card">
+            <h3>Chat with AI Assistant</h3>
+            <p>Discuss your emotions and get personalized insights</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Display chat history
+    for message in st.session_state.chat_history:
+        role = "user" if message["role"] == "user" else "assistant"
+        with st.chat_message(role):
+            st.write(message["content"])
+    
+    # Chat input
+    user_input = st.chat_input("Type your message here...")
+    
+    if user_input:
+        # Add user message to chat
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.write(user_input)
+        
+        # Simulate AI response
+        with st.chat_message("assistant"):
+            response = "I understand you're feeling that way. Would you like to tell me more about what's on your mind? I'm here to listen and help you understand your emotions better."
+            st.write(response)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+    
+    # Clear chat button
+    if st.button("🗑️ Clear Chat"):
+        st.session_state.chat_history = []
+        st.rerun()
 
 # Footer with better styling
 st.markdown("---")
