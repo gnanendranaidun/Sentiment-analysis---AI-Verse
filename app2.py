@@ -24,6 +24,10 @@ import numpy as np
 import threading
 import time
 from tensorflow.keras.models import load_model
+import Sarvam_STT
+import Google_Translate
+
+
 # Set page config
 st.set_page_config(
     page_title="Mindful AI - Emotion Analyzer",
@@ -212,12 +216,15 @@ def load_models():
 
         if face_cascade.empty():
             st.error("Error loading face detection model")
-            return None, None
+            return (None, None), (None, None)
+
 
         # Load sentiment analysis model
         try:
             model = whisper.load_model("base")
             sentiment_analysis = pipeline("sentiment-analysis", framework="pt", model="SamLowe/roberta-base-go_emotions")
+
+            return (sentiment_analysis, model), (face_cascade, classifier)
         except Exception as e:
             st.error(f"Error loading sentiment analysis model: {str(e)}")
             return (None, None), (None, None)
@@ -390,10 +397,12 @@ with tab1:
                             
                             st.markdown("### 📊 Analysis Results")
                             st.markdown("#### Transcribing Audio...")
-                            results = model.transcribe(file_path)
-                            st.markdown(f"## {results["text"]}")
-                            print(results)
-                            sentiment_output_value = inference(results["text"], "Sentiment + Score")
+                            results = Sarvam_STT.detect_and_translate(file_path)
+                            st.markdown(f"### {results["transcript"]}")
+                            text = results["transcript"]
+                            if not results["language_code"] == "en":
+                                text = Google_Translate.detect_and_translate(text)
+                            sentiment_output_value = inference(text, "Sentiment + Score")
                             st.markdown("#### "+ sentiment_output_value)
                             
                             
