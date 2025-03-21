@@ -71,14 +71,25 @@ st.markdown("""
         transform: translateY(-5px);
         box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     }
+    .stTabs {
+        margin: 0 auto;
+        max-width: 1200px;
+    }
     .stTabs [data-baseweb="tab-list"] {
         gap: 2rem;
+        justify-content: center !important;
+        display: flex !important;
+        width: 100%;
     }
     .stTabs [data-baseweb="tab"] {
+        flex: 1;
+        max-width: 300px;
+        min-width: 200px;
+        text-align: center;
+        margin: 0 10px;
         background-color: white;
         border-radius: 20px;
         padding: 10px 20px;
-        margin: 0 5px;
         transition: all 0.3s ease;
         color: #2c3e50;
     }
@@ -90,29 +101,6 @@ st.markdown("""
         background-color: #FF6B6B !important;
         color: white !important;
     }
-    .camera-container {
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        background: white;
-        padding: 1rem;
-    }
-    .metric-container {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin: 1rem 0;
-        color: #2c3e50;
-    }
-    .header-container {
-        text-align: center;
-        padding: 2rem;
-        background: linear-gradient(45deg, #FF6B6B, #FF8E53);
-        border-radius: 20px;
-        color: white;
-        margin-bottom: 2rem;
-    }
     .feature-card {
         background: white;
         padding: 1.5rem;
@@ -121,10 +109,18 @@ st.markdown("""
         margin: 1rem 0;
         transition: all 0.3s ease;
         color: #2c3e50;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
     .feature-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+    .camera-feed {
+        margin: 0 auto;
+        max-width: 800px;
+        width: 100%;
     }
     .emotion-indicator {
         position: absolute;
@@ -292,12 +288,18 @@ with col3:
         </div>
     """, unsafe_allow_html=True)
 
-# Create tabs for different features
+# Create centered container for all content
+st.markdown("""
+    <div style='display: flex; justify-content: center; width: 100%;'>
+        <div style='max-width: 1200px; width: 100%;'>
+""", unsafe_allow_html=True)
+
+# Create tabs
 tab1, tab2, tab3 = st.tabs(["🎤 Voice Analysis", "👤 Facial Detection", "❤️ Heart Rate Monitor"])
 
 # Voice Analysis Tab
 with tab1:
-    st.header("Voice Emotion Analysis")
+    st.header("Voice Analysis")
     
     # Voice recording section with better styling
     st.markdown("""
@@ -427,20 +429,20 @@ with tab1:
 with tab2:
     st.header("Facial Detection")
     
-    # Input selection
-    input_type = st.radio(
-        "Choose input type",
-        ["📹 Live Camera", "📸 Upload Image", "🎥 Upload Video"],
-        horizontal=True
-    )
+    # Center the radio buttons
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        input_type = st.radio(
+            "Choose input type",
+            ["📹 Live Camera", "📸 Upload Image", "🎥 Upload Video"],
+            horizontal=True,
+            key="detection_type"
+        )
     
+    # Camera feed section
     if input_type == "📹 Live Camera":
-        st.markdown("""
-            <div class="feature-card">
-                <h3>Live Camera Feed</h3>
-                <p>Real-time facial detection and emotion analysis</p>
-            </div>
-        """, unsafe_allow_html=True)
+        # Center the camera feed
+        st.markdown('<div class="camera-feed">', unsafe_allow_html=True)
         
         # Create a placeholder for the camera feed
         if st.session_state.frame_placeholder is None:
@@ -449,33 +451,23 @@ with tab2:
         # Camera control buttons
         col1, col2 = st.columns(2)
         with col1:
-            start_camera = st.button("📹 Start Camera")
+            if st.button("📹 Start Camera"):
+                st.session_state.camera_running = True
         with col2:
-            stop_camera = st.button("⏹️ Stop Camera")
-
-        # Start camera feed
-        if start_camera:
-            st.session_state.camera_running = True
-            
-        # Stop camera feed
-        if stop_camera:
-            st.session_state.camera_running = False
-            st.session_state.frame_placeholder.empty()
+            if st.button("⏹️ Stop Camera"):
+                st.session_state.camera_running = False
+                st.session_state.frame_placeholder.empty()
         
         # Camera feed display
         if st.session_state.camera_running:
-            # Use Streamlit's built-in camera input
-            camera_frame = st.camera_input("Camera Feed")
+            camera_frame = st.camera_input("", key="continuous_camera")
             
             if camera_frame is not None:
-                # Convert the camera frame to PIL Image
                 frame = Image.open(camera_frame)
-                
-                # Annotate emotions on the frame
                 annotated_frame = annotate_emotions(frame)
-                
-                # Display the annotated frame
-                st.session_state.frame_placeholder.image(annotated_frame, caption="Live Feed with Emotion Detection", use_container_width=True)
+                st.session_state.frame_placeholder.image(annotated_frame, use_container_width=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
     elif input_type == "📸 Upload Image":
         st.markdown("""
@@ -678,7 +670,9 @@ st.markdown("---")
 st.markdown("""
     <div style='text-align: center; padding: 2rem; background: linear-gradient(45deg, #FF6B6B, #FF8E53); border-radius: 20px; color: white;'>
         <p style='font-size: 1.2rem;'>Built with ❤️ using Streamlit</p>
-        <p style='font-size: 0.9rem;'>© 2024 Mindful AI - Emotion Analyzer</p>
+        <p style='font-size: 0.9rem;'>© 2025 Mindful AI - Emotion Analyzer</p>
     </div>
 """, unsafe_allow_html=True)
+
+st.markdown("</div></div>", unsafe_allow_html=True)
 
