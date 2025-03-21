@@ -15,6 +15,7 @@ from tensorflow.keras.preprocessing.image import img_to_array
 from PIL import Image
 import numpy as np
 import time
+import json
 import Sarvam_STT
 import Google_Translate
 
@@ -138,6 +139,35 @@ if 'camera_thread' not in st.session_state:
 
 # Emotion labels
 emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+def ask_model(input):
+    import requests
+    import os
+    
+    token = os.environ.get("FRIENDLI_TOKEN") or "flp_J8ORWjDgjjLRp5pPWlAPODZlFr5AIQCjLvh9wuZPAS99d"
+    
+    url = "https://api.friendli.ai/dedicated/v1/chat/completions"
+    
+    headers = {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+    }
+    
+    payload = {
+      "model": "vxrdv29u803z",
+      "messages":input,
+      "max_tokens": 1000,
+      "top_p": 0.8,
+      "stream": False,
+    }
+    
+    response = requests.request("POST", url, json=payload, headers=headers)
+    try:
+        data = response.json()
+        return data['choices'][0]['message']['content']
+    except requests.exceptions.JSONDecodeError:
+        print("Failed to parse JSON:", response.text)
+        return "Error: Failed to get a valid response from the model."
+
 def annotate_emotions(file_path):
     
     # Load the image using OpenCV
@@ -643,48 +673,63 @@ with tab3:
                 st.success("✅ Heart rate is within normal range")
 
 # AI Chat Tab
+# AI Chat Tab
 with tab4:
     st.header("AI Chat")
     
     # Initialize chat history in session state if not exists
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
-    
+
     st.markdown("""
         <div class="feature-card">
             <h3>Chat with AI Assistant</h3>
             <p>Discuss your emotions and get personalized insights</p>
         </div>
     """, unsafe_allow_html=True)
-    
+
     # Display chat history
     for message in st.session_state.chat_history:
         role = "user" if message["role"] == "user" else "assistant"
         with st.chat_message(role):
             st.write(message["content"])
-    
-    # Chat input
-    user_input = st.chat_input("Type your message here...")
-    
-    if user_input:
-        # Add user message to chat
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+    # Function to simulate AI response generation (streaming effect)
+    def generate_response(user_input):
+        # Fetch AI response using the ask_model function
+        full_response = ask_model(user_input)
         
-        # Display user message
+        # Simulate typing by displaying the response character-by-character
+        streamed_response = ""
+        for char in full_response:
+            streamed_response += char
+            time.sleep(0.02)  # Simulate "thinking" delay between characters
+            yield streamed_response
+
+    # Chat input section
+    user_input = st.chat_input("Type your message here...")
+
+    if user_input:
+        # Add user message to chat history and display it
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.write(user_input)
-        
-        # Simulate AI response
-        with st.chat_message("assistant"):
-            response = "I understand you're feeling that way. Would you like to tell me more about what's on your mind? I'm here to listen and help you understand your emotions better."
-            st.write(response)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-    
-    # Clear chat button
-    if st.button("🗑️ Clear Chat"):
-        st.session_state.chat_history = []
-        st.rerun()
 
+        # Stream the AI response
+        with st.chat_message("assistant"):
+            ai_response_placeholder = st.empty()  # Placeholder for streaming text
+            final_response = ""
+            for response in generate_response(st.session_state.chat_history):
+                ai_response_placeholder.write(response)  # Update the placeholder with each character
+                final_response = response
+            
+            # Once done, finalize the actual response in the chat history
+            st.session_state.chat_history.append({"role": "assistant", "content": final_response})
+
+    # Clear chat button
+    if st.button("🧹 Clear Chat"):
+        st.session_state.chat_history = []  # Clear the chat history
+        st.rerun()  # Rerun the app to refresh the UI immediately
 # Footer with better styling
 st.markdown("---")
 st.markdown("""

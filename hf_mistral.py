@@ -48,7 +48,7 @@
 import requests
 import os
 
-token = os.environ.get("FRIENDLI_TOKEN") or "YOUR_FRIENDLI_TOKEN"
+token = os.environ.get("FRIENDLI_TOKEN") or "flp_J8ORWjDgjjLRp5pPWlAPODZlFr5AIQCjLvh9wuZPAS99d"
 
 url = "https://api.friendli.ai/dedicated/v1/chat/completions"
 
@@ -61,20 +61,8 @@ payload = {
   "model": "vxrdv29u803z",
   "messages": [
     {
-      "role": "system",
-      "content": "i am feeling sad, lighten up my mood\n"
-    },
-    {
       "role": "user",
       "content": "i am feeling sad, lighten up my mood\n"
-    },
-    {
-      "role": "assistant",
-      "content": "I'm so sorry to hear that you're feeling down! Here are some fun ways to lift your spirits:\n\n1. Watch a funny animal video - there's nothing like cute puppies or silly cats to make you smile!\n2. Listen to upbeat music - put on your favorite happy song or create a playlist of your most cheerful tunes.\n3. Call a friend - talking to someone you love can always brighten your day.\n4. Do something creative - painting, drawing, or writing can be great ways to express your emotions and feel better.\n5. Take a walk - fresh air and exercise can boost your mood and energy levels.\n6. Indulge in something you love - whether it's your favorite dessert or a favorite TV show, treat yourself to something that always makes you happy.\n\nRemember, it's okay to feel sad sometimes, but taking care of yourself and doing things that make you feel good can help."
-    },
-    {
-      "role": "user",
-      "content": ""
     }
   ],
   "max_tokens": 2048,
