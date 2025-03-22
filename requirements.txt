@@ -16,5 +16,4 @@ google-cloud-translate>=3.12.0
 langdetect
 deep_translator
 uuid
-tempfile
 gdown
