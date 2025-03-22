@@ -2,8 +2,8 @@
 
 Mindful AI is a comprehensive emotional wellness companion that uses advanced AI models to analyze emotions through multiple modalities: voice, facial expressions, and heart rate data. The app also features an AI chat assistant and voice chat capabilities for personalized emotional insights.
 
+Check out the App here [Multilingual Ai Assistant](https://emotional-ai-assistant.streamlit.app/)
 ---
-
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
