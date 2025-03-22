@@ -4,7 +4,22 @@ def text_to_speech(text,language):
     import base64
     import wave
     SARVAM_AI_API="96e9ce28-c143-4dbd-aa30-704d9bc41de4"
+    d = {
+        "hi":"hi-IN", 
+        "bn":"bn-IN", 
+        "kn":"kn-IN", 
+        "ml":"ml-IN", 
+        "mr":"mr-IN", 
+        "od":"od-IN", 
+        "pa":"pa-IN", 
+        "ta":"ta-IN", 
+        "te":"te-IN", 
+        "en":"en-IN", 
+        "gu":"gu-IN"
+    }
 
+
+    lang = d[language]
     url = "https://api.sarvam.ai/text-to-speech"
     headers = {
         "Content-Type": "application/json",
@@ -29,7 +44,7 @@ def text_to_speech(text,language):
         # Prepare the payload for the API request
         payload = {
             "inputs": [chunk],
-            "target_language_code": "hi-IN",  # Target language code (Kannada in this case)
+            "target_language_code": lang,  # Target language code (Kannada in this case)
             "speaker": "neel",  # Speaker voice
             "model": "bulbul:v1",  # Model to use
             "pitch": 0,  # Pitch adjustment

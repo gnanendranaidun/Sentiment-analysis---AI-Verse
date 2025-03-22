@@ -1,71 +1,81 @@
+# Mindful AI - Emotion Analyzer
 
-# 🎤 Multilingual ASR with Sentiment Analysis 💬
+Mindful AI is a comprehensive emotional wellness companion that uses advanced AI models to analyze emotions through multiple modalities: voice, facial expressions, and heart rate data. The app also features an AI chat assistant and voice chat capabilities for personalized emotional insights.
 
-This Streamlit app allows you to:
-- Record audio directly from your browser 🎙️
-- Transcribe the audio using OpenAI's Whisper model 📝
-- Perform sentiment analysis using the `go_emotions` model by Hugging Face 🤖
-- Display emotions with intuitive emojis 😄😢😠
+---
 
-## 🚀 Features
-✅ **Audio Recording:** Record audio within the app using `streamlit-mic-recorder`  
-✅ **Multilingual ASR:** Uses Whisper's `base` model for speech-to-text in multiple languages  
-✅ **Sentiment Analysis:** Leverages `SamLowe/roberta-base-go_emotions` for extracting emotions from transcriptions  
-✅ **Emoji Display:** Maps each emotion to its relevant emoji for easy visualization  
-✅ **Save Recordings:** Audio is saved locally in the `recordings` directory  
+## Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
-## 🛠 Tech Stack
-- [Streamlit](https://streamlit.io/)
-- [OpenAI Whisper](https://github.com/openai/whisper)
-- [Hugging Face Transformers](https://huggingface.co/docs/transformers)
-- [streamlit-mic-recorder](https://github.com/stefanrmmr/streamlit-mic-recorder)
+---
 
-## 📂 Project Structure
-```
-📁 recordings/        # Stores all recorded audio files
-📄 app.py             # Main Streamlit application
-📄 README.md          # Project Documentation
-```
+## Overview
 
-## 💻 How to Run Locally
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/gnanendranaidun/Sentiment-analysis---AI-Verse.git
-   cd Sentiment-analysis---AI-Verse
-   ```
+Mindful AI leverages several state-of-the-art models and libraries to help users understand their emotional state. Using **Streamlit** as the frontend, it provides an interactive user interface that includes:
 
-2. **Install Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+- **Voice Analysis:** Record your voice, transcribe audio with Whisper, and analyze sentiment with a transformer-based sentiment model.
+- **Facial Detection:** Detect faces and annotate emotions using OpenCV and a pre-trained emotion classifier.
+- **Heart Rate Monitoring:** Upload or stream heart rate data to visualize and analyze heart rate patterns.
+- **AI Chat:** Chat with an AI assistant for personalized insights and emotional guidance.
+- **Voice Chat:** Convert your voice into text, process it with an AI model, and listen to the AI-generated response using text-to-speech.
 
-3. **Run the Streamlit App:**
-   ```bash
-   streamlit run app.py
-   ```
+---
 
-## 📜 Example Usage
-1. Click **Start Recording** to record your voice.
-2. **Stop Recording** when done.
-3. Click **Get Sentiments** to:
-   - Transcribe your speech
-   - Analyze emotions
-   - Display sentiments with emojis
+## Features
 
-## 🎯 Example Sentiment Output:
-```
-joy 😄: 0.85
-gratitude 🙏: 0.65
-admiration 😌: 0.60
-```
+### Voice Analysis
+- **Record Audio:** Capture your voice using a microphone.
+- **Transcription & Emotion Detection:** Transcribe audio and detect voice emotion.
+- **Sentiment Visualization:** Display sentiment analysis with corresponding emojis and scores.
 
-## ✅ To-Do / Improvements
-- Add language selection for Whisper model
-- Enable sentiment trend visualization (charts/graphs)
-- Deploy to Streamlit Cloud or Hugging Face Spaces
+### Facial Detection
+- **Input Options:** Use live camera feed or uploaded images/videos.
+- **Emotion Annotation:** Detect faces and annotate them with predicted emotions.
 
-## 🤖 Model References
-- **Whisper:** [OpenAI Whisper](https://github.com/openai/whisper)
-- **Sentiment Model:** [SamLowe/roberta-base-go_emotions](https://huggingface.co/SamLowe/roberta-base-go_emotions)
+### Heart Rate Monitor
+- **Data Options:** Upload CSV data or perform live monitoring.
+- **Interactive Visuals:** Visualize heart rate data with interactive plots.
+- **Metrics:** Display key metrics such as average, maximum, and minimum heart rate.
 
+### AI Chat
+- **Conversational Interface:** Chat with an AI assistant that streams responses.
+- **History Maintenance:** Maintain a conversation history for context.
 
+### Voice Chat
+- **Voice Messaging:** Record and send voice messages.
+- **Advanced Processing:** Process voice input through speech-to-text, translation, AI modeling, and text-to-speech for dynamic responses.
+
+---
+
+## Architecture
+
+The project is built using the following libraries and frameworks:
+
+- **Streamlit:** For creating the web application interface.
+- **Transformers:** To load and run transformer models for sentiment analysis.
+- **Whisper:** For automatic speech recognition.
+- **TensorFlow & Keras:** For loading and running the emotion classification model.
+- **OpenCV:** For image and video processing, including face detection.
+- **Plotly:** To create interactive charts for heart rate monitoring.
+- **Other Dependencies:** Including libraries such as `pandas`, `numpy`, `uuid`, `tempfile`, and custom modules like `Sarvam_STT`, `Google_Translate`, and `tts_tutorial`.
+
+---
+
+## Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- Pip (Python package manager)
+
+### Clone the Repository
+```bash
+git clone https://github.com/yourusername/mindful-ai-emotion-analyzer.git
+cd mindful-ai-emotion-analyzer

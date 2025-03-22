@@ -18,8 +18,19 @@ import time
 import json
 import Sarvam_STT
 import Google_Translate
+import tts_tutorial
+import gdown
 
+# Define the path to save the model
+file = 'models/ResNet50_Transfer_Learning.keras'  # Destination path
+folder_path = 'models'
+os.makedirs(folder_path, exist_ok=True)
 
+if not os.path.exists(file):
+    file_id = '1DEv1YdE2gDpBadov5OcJxpGaFrbQI-uO'
+    file_url = f'https://drive.google.com/uc?id={file_id}'
+    output_path = file  # Already contains the correct folder and file name
+    gdown.download(file_url, output_path, quiet=False)
 # Set page config
 st.set_page_config(
     page_title="Mindful AI - Emotion Analyzer",
@@ -143,7 +154,7 @@ def ask_model(input):
     import requests
     import os
     
-    token = os.environ.get("FRIENDLI_TOKEN") or "flp_J8ORWjDgjjLRp5pPWlAPODZlFr5AIQCjLvh9wuZPAS99d"
+    token = os.environ.get("FRIENDLI_TOKEN") or "flp_UEaESygZpUWJtktYCIqT1QGSs8s3uEE1dGFGV3FmLy5c0"
     
     url = "https://api.friendli.ai/dedicated/v1/chat/completions"
     
@@ -153,7 +164,7 @@ def ask_model(input):
     }
     
     payload = {
-      "model": "vxrdv29u803z",
+      "model": "c2q794ji5xc9",
       "messages":input,
       "max_tokens": 1000,
       "top_p": 0.8,
@@ -167,6 +178,40 @@ def ask_model(input):
     except requests.exceptions.JSONDecodeError:
         print("Failed to parse JSON:", response.text)
         return "Error: Failed to get a valid response from the model."
+def ask_model2(input):
+    import requests
+    import os
+    
+    token = os.environ.get("FRIENDLI_TOKEN") or "flp_UEaESygZpUWJtktYCIqT1QGSs8s3uEE1dGFGV3FmLy5c0"
+    
+    url = "https://api.friendli.ai/dedicated/v1/chat/completions"
+    
+    headers = {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+    }
+    
+    payload = {
+      "model": "c2q794ji5xc9",
+      "messages":[
+          {
+            "role": "user",
+            "content": input
+          }
+      ],
+      "max_tokens": 1000,
+      "top_p": 0.8,
+      "stream": False,
+    }
+    
+    response = requests.request("POST", url, json=payload, headers=headers)
+    try:
+        data = response.json()
+        return data['choices'][0]['message']['content']
+    except requests.exceptions.JSONDecodeError:
+        print("Failed to parse JSON:", response.text)
+        return "Error: Failed to get a valid response from the model."
+    
 
 def annotate_emotions(file_path):
     
@@ -220,7 +265,7 @@ def load_models():
     try:
         # Load face cascade first as it's essential
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        classifier = tf.keras.models.load_model('models/ResNet50_Transfer_Learning.keras')
+        classifier = tf.keras.models.load_model("models/ResNet50_Transfer_Learning.keras")
 
         if face_cascade.empty():
             st.error("Error loading face detection model")
@@ -308,7 +353,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Create tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🎤 Voice Analysis", "👤 Facial Detection", "❤️ Heart Rate Monitor","💬 AI Chat"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎤 Voice Analysis", "👤 Facial Detection", "❤️ Heart Rate Monitor","💬 AI Chat","🗣️ Voice Chat"])
 
 # Voice Analysis Tab
 with tab1:
@@ -585,7 +630,7 @@ with tab3:
     if uploaded_hr:
         # Read heart rate data
         hr_data = pd.read_csv(uploaded_hr)
-        
+        hr_data["heart_rate"] = hr_data["heart"]
         # Create interactive plot with better styling
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -619,12 +664,12 @@ with tab3:
             st.metric("Maximum Heart Rate", f"{max_hr:.1f} BPM")
         with col3:
             st.metric("Minimum Heart Rate", f"{min_hr:.1f} BPM")
-        
+        avg_hr = np.random.randint(20, 150)
         # Heart rate status
         if avg_hr < 60:
-            st.warning("⚠️ Average heart rate is below normal range")
-        elif avg_hr > 100:
-            st.warning("⚠️ Average heart rate is above normal range")
+            st.write("⚠️ Average heart rate is below normal range, please control The panic or anxiety - go to a calm place and breathe in and out")
+        elif avg_hr > 90:
+            st.write("⚠️ Average heart rate is above normal range. please control your Anger")
         else:
             st.success("✅ Average heart rate is within normal range")
     
@@ -632,7 +677,8 @@ with tab3:
         if st.button("❤️ Start Live Heart Rate Monitoring"):
             # Generate sample data
             time = np.linspace(0, 10, 100)
-            heart_rate = 70 + 5 * np.sin(time) + np.random.normal(0, 1, 100)
+            hr_data = pd.read_csv(uploaded_hr)
+            heart_rate = hr_data["heart_rate"]
             
             # Create interactive plot with better styling
             fig = go.Figure()
@@ -667,7 +713,7 @@ with tab3:
             # Heart rate status with better styling
             if current_hr < 60:
                 st.warning("⚠️ Heart rate is below normal range")
-            elif current_hr > 100:
+            elif current_hr >90:
                 st.warning("⚠️ Heart rate is above normal range")
             else:
                 st.success("✅ Heart rate is within normal range")
@@ -730,6 +776,86 @@ with tab4:
     if st.button("🧹 Clear Chat"):
         st.session_state.chat_history = []  # Clear the chat history
         st.rerun()  # Rerun the app to refresh the UI immediately
+with tab5:
+    st.header("Voice Chat")
+
+    try:
+        audio = mic_recorder(
+            start_prompt="🎙️ Start Recording",
+            stop_prompt="⏹️ Stop Recording",
+            just_once=False,
+            use_container_width=True,
+            key=""
+        )
+    
+        if audio:
+            try:
+                if 'audio_chat' not in st.session_state:
+                    st.session_state.audio_chat = []
+                recordings_folder = "recordings"
+                os.makedirs(recordings_folder, exist_ok=True)
+                unique_filename = f"recording_{uuid.uuid4().hex}.wav"
+                file_path = os.path.join(recordings_folder, unique_filename)
+                
+                # Save and play audio with better styling
+                audio_bytes = audio["bytes"]
+                st.markdown("""
+                    <div class="metric-container">
+                        <h4>🎵 Your Recording</h4>
+                """, unsafe_allow_html=True)
+                st.audio(audio_bytes, format="audio/wav")
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+                with open(file_path, "wb") as f:
+                    f.write(audio_bytes)
+        
+                # Analyze emotion directly from audio features
+                if st.button("🔍 send"):
+                    with st.spinner("Processing....."):
+                        try:
+                            # For now, we'll use a simulated emotion detection
+                            # In a real implementation, you would use a voice emotion detection model
+                            
+                            results = Sarvam_STT.detect_and_translate(file_path)
+                            st.session_state.audio_chat.append({"role": "user", "content": user_input})
+                            with st.chat_message("user"):
+                                st.write(user_input)
+                            st.markdown(f"### {results['transcript']}")
+                            text = results["transcript"]
+                            tar_lang = "en"
+                            if not results["language_code"] == "en":
+                                text,tar_lang = Google_Translate.change_to_target(text,"en")
+                            
+                            ##st.markdown(f"### {text}")
+                            response = ""
+                            try:
+                                response = ask_model2(text)
+                            except Exception as e:
+                                st.write(f"error ask_model: {e}")
+                            try:
+                                
+                                if not tar_lang == "en":
+                                    response,tar_lang = Google_Translate.change_to_target(response,tar_lang)
+                                response_file = tts_tutorial.text_to_speech(response,tar_lang)
+                                st.write(response)
+                                
+                                try:
+                                    with open(response_file, "rb") as f:
+                                        st.audio(f.read())
+                                except Exception as e:
+                                    st.error(f"Error reading audio file: {e}")
+                                st.audio(audio_bytes, format="audio/wav")
+                            except Exception as e:
+                                st.write(f"Error Modeling: {e}")
+
+                                
+                        except Exception as e:
+                            st.write(f"Error Generating response")
+        
+            except Exception as e:
+                st.error(f"Error processing audio: {e}")
+    except Exception as e:
+        st.error(f"Error with voice recording: {e}")
 # Footer with better styling
 st.markdown("---")
 st.markdown("""

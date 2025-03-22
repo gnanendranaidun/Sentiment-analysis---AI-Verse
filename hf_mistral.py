@@ -48,9 +48,10 @@
 import requests
 import os
 
-token = os.environ.get("FRIENDLI_TOKEN") or "flp_J8ORWjDgjjLRp5pPWlAPODZlFr5AIQCjLvh9wuZPAS99d"
-
+token = os.environ.get("FRIENDLI_TOKEN") or "flp_UEaESygZpUWJtktYCIqT1QGSs8s3uEE1dGFGV3FmLy5c0"
+    
 url = "https://api.friendli.ai/dedicated/v1/chat/completions"
+    
 
 headers = {
   "Authorization": "Bearer " + token,
@@ -58,7 +59,7 @@ headers = {
 }
 
 payload = {
-  "model": "vxrdv29u803z",
+  "model": "c2q794ji5xc9",
   "messages": [
     {
       "role": "user",
@@ -67,10 +68,7 @@ payload = {
   ],
   "max_tokens": 2048,
   "top_p": 0.8,
-  "stream": True,
-  "stream_options": {
-    "include_usage": True
-  }
+  "stream": False,
 }
 
 response = requests.request("POST", url, json=payload, headers=headers)
